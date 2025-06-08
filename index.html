@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Saat-Takvim-Hava Durumu Widget'ı</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Handlee&display=swap');
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      height: 100%;
+    }
+
+    body {
+      background: url('https://i.postimg.cc/wxsdFyYt/wallhaven-8x2oz2.jpg') no-repeat center center fixed;
+      background-size: cover;
+      font-family: 'Handlee', cursive;
+      color: white;
+    }
+
+    /* Konum seçici kutusu */
+    .location-picker {
+      position: fixed;
+      top: 10px;
+      left: 10px;
+      background: rgba(0,0,0,0.5);
+      border-radius: 8px;
+      padding: 5px 10px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: white;
+      font-size: 16px;
+      cursor: pointer;
+      user-select: none;
+      box-shadow: 0 0 10px rgba(0,0,0,0.7);
+    }
+    .location-picker img {
+      width: 24px;
+      height: 24px;
+    }
+    .location-picker select {
+      background: transparent;
+      border: none;
+      color: white;
+      font-family: 'Handlee', cursive;
+      font-size: 16px;
+      outline: none;
+      cursor: pointer;
+      -webkit-appearance: none;
+      -moz-appearance: none;
+      appearance: none;
+    }
+
+    .location-picker select option {
+     background: white;    
+     color: black;   
+
+    }
+
+    .overlay {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      text-align: center;
+      color: white;
+      text-shadow: 1px 1px 3px #000;
+    }
+
+    .time {
+      font-size: 70px;
+      font-weight: bold;
+    }
+
+    .date {
+      font-size: 34px;
+      margin-bottom: 10px;
+    }
+
+    .weather {
+      font-size: 28px;
+      margin-top: 5px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .weather img {
+      width: 50px;
+      height: 50px;
+      vertical-align: middle;
+    }
+
+    .fade-in {
+      animation: fadeIn 3s ease-in-out;
+    }
+
+    @keyframes fadeIn {
+      0% { opacity: 0; transform: translateY(-10px); }
+      100% { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Konum seçici -->
+  <div class="location-picker">
+    <img src="https://cdn-icons-png.flaticon.com/512/684/684908.png" alt="Konum Simgesi" />
+    <select id="citySelect" aria-label="Şehir Seçiniz">
+      <option value="Istanbul">İstanbul</option>
+      <option value="Ankara">Ankara</option>
+      <option value="Izmir">İzmir</option>
+      <option value="Bursa">Bursa</option>
+      <option value="Antalya">Antalya</option>
+      <option value="Adana">Adana</option>
+      <option value="Konya">Konya</option>
+      <option value="Gaziantep">Gaziantep</option>
+      <option value="Kayseri">Kayseri</option>
+      <option value="Samsun">Samsun</option>
+      <option value="Kütahya">Kütahya</option>
+      <!-- İstersen buraya diğer şehirleri de ekleyebilirsin -->
+    </select>
+  </div>
+
+  <div class="overlay fade-in">
+    <div class="date" id="date"></div>
+    <div class="time" id="time"></div>
+    <div class="weather" id="weather">Hava durumu yükleniyor...</div>
+  </div>
+
+  <script>
+    const apiKey = '9d5978aa108dae1157ab34c60f9e9a9e';
+    const weatherElem = document.getElementById('weather');
+    const citySelect = document.getElementById('citySelect');
+
+    // Saat ve tarih güncelleme fonksiyonu
+    function updateClock() {
+      const now = new Date();
+      const time = now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', second:'2-digit'});
+      const date = now.toLocaleDateString('tr-TR', {weekday: 'short', year: 'numeric', month: 'short', day: 'numeric'});
+      document.getElementById('time').textContent = time;
+      document.getElementById('date').textContent = date;
+    }
+    setInterval(updateClock, 1000);
+    updateClock();
+
+    // Hava durumu API çağrısı
+    function fetchWeather(city) {
+      weatherElem.textContent = 'Hava durumu yükleniyor...';
+      const apiUrl = `https://api.openweathermap.org/data/2.5/weather?q=${city}&appid=${apiKey}&units=metric&lang=tr`;
+
+      fetch(apiUrl)
+        .then(response => {
+          if (!response.ok) throw new Error('Sunucu yanıt vermedi');
+          return response.json();
+        })
+        .then(data => {
+          const temp = data.main.temp;
+          const description = data.weather[0].description;
+          const iconCode = data.weather[0].icon;
+          const iconUrl = `https://openweathermap.org/img/wn/${iconCode}@2x.png`;
+
+          weatherElem.innerHTML =
+            `<img src="${iconUrl}" alt="${description}" />
+             <span>${city}: ${temp.toFixed(1)}°C, ${description}</span>`;
+        })
+        .catch(error => {
+          console.error('Hava bilgisi alınamadı:', error);
+          weatherElem.textContent = 'Hava bilgisi alınamadı.';
+        });
+    }
+
+    // Sayfa yüklendiğinde varsayılan şehir için hava durumu
+    fetchWeather(citySelect.value);
+
+    // Şehir seçimi değişince hava durumu yenile
+    citySelect.addEventListener('change', (e) => {
+      fetchWeather(e.target.value);
+    });
+  </script>
+
+</body>
+</html>
